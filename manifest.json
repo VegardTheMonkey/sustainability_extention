@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Sustainability Dashboard",
+  "version": "1.0",
+  "description": "A tool to visualize CO₂ emissions for images on the page.",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "webRequest",
+    "storage",
+    "webNavigation",
+    "tabs"
+    
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content_script.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["chart.js", "co2js/co2.js", "co2js/index.js", "co2js/country-data.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
