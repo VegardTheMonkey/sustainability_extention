@@ -1,6 +1,9 @@
 // Load the CO2.js library using importScripts
 self.importScripts('./co2.js');
 
+// Load the webrequest-chrome.js library using importScripts
+self.importScripts('./webrequest-chrome.js');
+
 // Creating an instance of the CO₂ calculator with options
 const co2Calculator = new co2.co2();
 
@@ -24,6 +27,9 @@ chrome.storage.local.get(['analyzeImages', 'selectedCountry', 'screenSize'], (re
   }
 });
 
+// Variable to hold the stop monitoring function
+let stopImageMonitoring = null;
+
 // Message listener for state changes from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'stateChange') {
@@ -36,9 +42,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       
       if (message.value === true) {
         console.log('Analysis mode activated - beginning image scanning');
-        // Here we would trigger the analysis logic when it's implemented
+        // Start monitoring image requests with current screen size and country settings
+        if (imageMonitor && typeof imageMonitor.monitorImageRequests === 'function') {
+          stopImageMonitoring = imageMonitor.monitorImageRequests(
+            extensionState.screenSize,
+            extensionState.selectedCountry
+          );
+        }
       } else {
         console.log('Analysis mode deactivated');
+        // Stop monitoring if we were doing so
+        if (stopImageMonitoring && typeof stopImageMonitoring === 'function') {
+          stopImageMonitoring();
+          stopImageMonitoring = null;
+        }
       }
     } 
     else if (message.flag === 'selectedCountry') {
