@@ -23,8 +23,17 @@ document.addEventListener('DOMContentLoaded', function() {
     function showDashboard() {
         controls.style.display = 'none';
         dashboard.style.display = 'block';
+
+        // // Get the active tab and reload it with cache disabled
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            if (tabs && tabs[0]) {
+                chrome.tabs.reload(tabs[0].id, {bypassCache: true});
+            }
+        });
+
         // Set analyzeImages flag to true when showing dashboard
         window.flagSetter.setAnalyzeImagesFlag(true);
+        
     }
     
     // Set initial state: show controls, hide dashboard
