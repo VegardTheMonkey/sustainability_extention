@@ -4,6 +4,10 @@ self.importScripts('./co2.js');
 // Load the webrequest-chrome.js library using importScripts
 self.importScripts('./webrequest-chrome.js');
 
+// Load the storeAnalysis.js module
+self.importScripts('./storeAnalasis.js');
+storeAnalysis.clearImageData();
+
 // Creating an instance of the CO₂ calculator with options
 const co2Calculator = new co2.co2();
 
@@ -40,6 +44,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       extensionState.analyzeImages = message.value;
       chrome.storage.local.set({ analyzeImages: message.value });
       
+      // Update the store analysis module state
+      storeAnalysis.setAnalyzingState(message.value);
+      
       if (message.value === true) {
         console.log('Analysis mode activated - beginning image scanning');
         // Start monitoring image requests with current screen size and country settings
@@ -72,6 +79,46 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Send a response to confirm receipt
     sendResponse({ success: true });
     return true; // Keeps the message channel open for async response
+  }
+  
+  // Handle image data coming from content script
+  if (message.action === 'logImageData') {
+    console.log('Service worker received image data from content script');
+    // Store the image data in our analysis module
+    storeAnalysis.storeImageData(message.imageData);
+    sendResponse({ success: true });
+    return true;
+  }
+  
+  // Handle request from popup for all collected data
+  if (message.action === 'getCollectedImageData') {
+    console.log('Popup requested all collected image data');
+    storeAnalysis.sendDataToPopup();
+    sendResponse({ success: true });
+    return true;
+  }
+  
+  // Handle request to clear data
+  if (message.action === 'clearCollectedImageData') {
+    console.log('Received request to clear collected image data');
+    storeAnalysis.clearImageData();
+    sendResponse({ success: true });
+    return true;
+  }
+});
+
+// Listen for popup window opening to send collected data
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'popup') {
+    console.log('Popup opened, sending collected data');
+    port.onDisconnect.addListener(() => {
+      console.log('Popup closed');
+    });
+    
+    // Small delay to ensure popup is ready to receive
+    setTimeout(() => {
+      storeAnalysis.sendDataToPopup();
+    }, 100);
   }
 });
 

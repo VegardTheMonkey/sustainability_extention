@@ -8,6 +8,45 @@ const SCREEN_SIZES = {
 };
 
 /**
+ * Auto-scrolls through the page to help view the entire content
+ */
+function autoScrollPage() {
+  console.log('Starting auto-scroll through page');
+  
+  // Calculate the total scroll height
+  const scrollHeight = Math.max(
+    document.body.scrollHeight,
+    document.documentElement.scrollHeight
+  ) - window.innerHeight;
+  
+  // Create scroll parameters
+  const duration = 10000; // 10 seconds total
+  const stepDelay = 50; // 50ms between steps
+  const steps = duration / stepDelay;
+  const scrollStep = scrollHeight / steps;
+  
+  let currentStep = 0;
+  let scrollInterval = setInterval(() => {
+    currentStep++;
+    
+    // Calculate current scroll position
+    const scrollPosition = currentStep * scrollStep;
+    
+    // Scroll to the new position
+    window.scrollTo({
+      top: scrollPosition,
+      behavior: 'smooth'
+    });
+    
+    // Check if we've reached the end
+    if (currentStep >= steps || scrollPosition >= scrollHeight) {
+      clearInterval(scrollInterval);
+      console.log('Auto-scroll completed');
+    }
+  }, stepDelay);
+}
+
+/**
  * Simulates a different screen width by applying CSS media query overrides
  * @param {string} screenSize - The screen size to simulate ('desktop', 'tablet', or 'phone')
  */
@@ -122,6 +161,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'simulateWidth') {
     try {
       simulateScreenWidth(message.screenSize);
+      autoScrollPage();
       sendResponse({ success: true });
     } catch (error) {
       console.error('Error simulating screen width:', error);
@@ -134,9 +174,44 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('Image request intercepted:', message.imageData);
     // Add detailed logging of the image properties
     console.log(`URL: ${message.imageData.url}`);
+    if(message.imageData.url){
+      // Use the findElementByImageUrl function directly since it's included in the content scripts
+      const imageElement = findElementByImageUrl(message.imageData.url);
+      
+      // Store the element in the imageData for later use
+      if (imageElement) {
+        message.imageData.element = imageElement;
+        console.log('Image element found:', imageElement);
+        
+        // You can also add more information about the element
+        message.imageData.elementInfo = {
+          tagName: imageElement.tagName,
+          width: imageElement.width || imageElement.offsetWidth,
+          height: imageElement.height || imageElement.offsetHeight,
+          isVisible: imageElement.offsetWidth > 0 && imageElement.offsetHeight > 0,
+          classList: Array.from(imageElement.classList),
+          altText: imageElement.alt || ''
+        };
+        console.log('Image element info:', message.imageData.elementInfo);
+      } else {
+        console.log('Image element not found for URL:', message.imageData.url);
+      }
+    }
     console.log(`Size: ${message.imageData.size} bytes`);
     console.log(`Type: ${message.imageData.type}`);
     console.log(`Screen Size: ${message.imageData.screenSize}`);
+    
+    // Send the data to the service worker instead of directly to the popup
+    chrome.runtime.sendMessage({
+      action: 'logImageData',
+      imageData: {
+        url: message.imageData.url,
+        size: message.imageData.size,
+        type: message.imageData.type,
+        screenSize: message.imageData.screenSize,
+        elementInfo: message.imageData.elementInfo
+      }
+    });
     
     // Send response back to confirm receipt
     sendResponse({ received: true });

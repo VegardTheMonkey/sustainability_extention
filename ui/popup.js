@@ -53,6 +53,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     backBtn.addEventListener('click', function() {
         showControls();
+        
+        // Clear collected image data from the service worker
+        window.imageReceiver.clearCollectedData();
+        
+        // Also clear any displayed content in the dashboard
+        const dashboardContent = Array.from(dashboard.children);
+        dashboardContent.forEach(child => {
+            if (!child.classList.contains('dashboard-header') && 
+                !child.classList.contains('display-toggle-container')) {
+                dashboard.removeChild(child);
+            }
+        });
+        
+        console.log("Cleared all collected image data");
     });
     
     clearBtn.addEventListener('click', function() {

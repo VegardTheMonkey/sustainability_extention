@@ -23,7 +23,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["contentscript.js"]
+      "js": ["findElement.js", "contentscript.js"]
     }
   ],
   "content_security_policy": {
@@ -31,7 +31,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["chart.js", "co2.js"],
+      "resources": ["chart.js", "co2.js", "findElement.js"],
       "matches": ["<all_urls>"]
     }
   ]
